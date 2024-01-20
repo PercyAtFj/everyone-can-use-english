@@ -5651,16 +5651,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:^28.1.4":
-  version: 28.1.4
-  resolution: "electron@npm:28.1.4"
+"electron@npm:28.1.2":
+  version: 28.1.2
+  resolution: "electron@npm:28.1.2"
   dependencies:
     "@electron/get": "npm:^2.0.0"
     "@types/node": "npm:^18.11.18"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 06cea12cb9d26534f483a338ff6f259650a020dd2604df8d9d9b76b6e2b0a0e366571f9491a1d03eff66ec9ff92247e74422cb6f1c3603a76da90c5e99d5e2e4
+  checksum: b946978dc962a5312d46a853165c4052ad5a907c5848410efb4d307a2cfdf7f8467dac169fa18bcf229ccd28566d768bdef769a9d196e2409714738b907bd812
   languageName: node
   linkType: hard
 
@@ -5791,7 +5791,7 @@ __metadata:
     dayjs: "npm:^1.11.10"
     decamelize: "npm:^6.0.0"
     decamelize-keys: "npm:^2.0.1"
-    electron: "npm:^28.1.4"
+    electron: "npm:28.1.2"
     electron-log: "npm:^5.0.4"
     electron-settings: "npm:^4.0.2"
     electron-squirrel-startup: "npm:^1.0.0"

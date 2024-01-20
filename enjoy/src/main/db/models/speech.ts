@@ -23,8 +23,30 @@ import { t } from "i18next";
 import { hashFile } from "@/utils";
 import { Audio, Message } from "@main/db/models";
 import log from "electron-log/main";
-
+const { spawn } = require('child_process');
 const logger = log.scope("db/models/speech");
+
+async function _generateTTS( text: string, voice: string,file:string ): Promise<null>{
+    return new Promise((resolve, reject) => {
+      const ttsProc = spawn('edge-tts', ['--voice', voice, '-t', text, '--write-media', file,'--write-subtitles','hello.vtt']);
+      ttsProc.stderr.on('data', (data) => {
+        logger.error('stderr: ' + data);
+      });
+      ttsProc.on('exit', (code, signal) => {
+        if (!signal && !code) {
+          resolve(null);
+        }
+        if (signal) {
+          logger.error('signal: ' + signal);
+          throw new Error('edge-tts was killed with signal ' + signal);
+        } else if (code) {
+          logger.error('code: ' + code);
+          throw new Error('edge-tts was killed with code ' + code);
+        }
+      });
+    });
+}
+
 @Table({
   modelName: "Speech",
   tableName: "speeches",
@@ -39,6 +61,7 @@ const logger = log.scope("db/models/speech");
     order: [["createdAt", "DESC"]],
   },
 }))
+
 export class Speech extends Model<Speech> {
   @IsUUID(4)
   @Default(DataType.UUIDV4)
@@ -149,7 +172,6 @@ export class Speech extends Model<Speech> {
       record: speech.toJSON(),
     });
   }
-
   static async generate(params: {
     sourceId: string;
     sourceType: string;
@@ -170,6 +192,7 @@ export class Speech extends Model<Speech> {
     const filename = `${Date.now()}${extname}`;
     const filePath = path.join(settings.userDataPath(), "speeches", filename);
 
+
     if (engine === "openai") {
       const key = settings.getSync("openai.key") as string;
       if (!key) {
@@ -189,6 +212,8 @@ export class Speech extends Model<Speech> {
 
       const buffer = Buffer.from(await file.arrayBuffer());
       await fs.outputFile(filePath, buffer);
+    } else if (engine === "edge-tts") {
+      await _generateTTS(text,voice, filePath);
     }
 
     const md5 = await hashFile(filePath, { algo: "md5" });

@@ -53,7 +53,7 @@ const conversationFormSchema = z.object({
       historyBufferSize: z.number().min(0).default(10),
       tts: z
         .object({
-          engine: z.enum(["openai"]).default("openai"),
+          engine: z.enum(["openai","edge-tts"]).default("edge-tts"),
           model: z.string().default("tts-1"),
           voice: z.string().optional(),
           baseUrl: z.string().optional(),
@@ -139,6 +139,7 @@ export const ConversationForm = (props: {
         // @ts-ignore
         delete configuration[key];
       }
+      console.log(key,configuration[key]);
     });
 
     if (!configuration.baseUrl) {
@@ -703,6 +704,12 @@ export const TTS_PROVIDERS: { [key: string]: any } = {
     models: ["tts-1"],
     voices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
   },
+  "edge-tts": {
+    name: "edge-tts",
+    description: t("youNeedToSetupApiKeyBeforeUsingOpenAI"),
+    models: ["tts"],
+    voices: ["en-US-BrianNeural"],
+  }
 };
 
 const conversationDefaultConfiguration = {
@@ -726,8 +733,8 @@ const conversationDefaultConfiguration = {
     historyBufferSize: 0,
     tts: {
       baseUrl: "",
-      engine: "openai",
-      model: "tts-1",
+      engine: "edge-tts",
+      model: "tts",
       voice: "alloy",
     },
   },
