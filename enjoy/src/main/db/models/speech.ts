@@ -27,8 +27,9 @@ const { spawn } = require('child_process');
 const logger = log.scope("db/models/speech");
 
 async function _generateTTS( text: string, voice: string,file:string ): Promise<null>{
+      logger.info('voice: ' + voice);
     return new Promise((resolve, reject) => {
-      const ttsProc = spawn('edge-tts', ['--voice', voice, '-t', text, '--write-media', file,'--write-subtitles','hello.vtt']);
+      const ttsProc = spawn('edge-tts', ['--voice', voice, '-t', text, '--write-media', file,'--write-subtitles','/dev/null']);
       ttsProc.stderr.on('data', (data) => {
         logger.error('stderr: ' + data);
       });
@@ -213,7 +214,8 @@ export class Speech extends Model<Speech> {
       const buffer = Buffer.from(await file.arrayBuffer());
       await fs.outputFile(filePath, buffer);
     } else if (engine === "edge-tts") {
-      await _generateTTS(text,voice, filePath);
+      const _voice = model + "-" + voice + "Neural";
+      await _generateTTS(text,_voice, filePath);
     }
 
     const md5 = await hashFile(filePath, { algo: "md5" });

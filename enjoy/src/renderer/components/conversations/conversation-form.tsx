@@ -555,14 +555,25 @@ export const ConversationForm = (props: {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(
+                      { 
+                        form.watch("configuration.tts.engine") === "openai" &&                       
+                      (
                         TTS_PROVIDERS[form.watch("configuration.tts.engine")]
                           ?.voices || []
                       ).map((voice: string) => (
-                        <SelectItem key={voice} value={voice}>
-                          <span className="capitalize">{voice}</span>
-                        </SelectItem>
+                          <SelectItem key={voice} value={voice}>
+                            <span className="capitalize">{voice}</span>
+                          </SelectItem>
                       ))}
+                      {
+                        form.watch("configuration.tts.engine") === "edge-tts" && (TTS_PROVIDERS[form.watch("configuration.tts.engine")]
+                          ?.voices[TTS_PROVIDERS["edge-tts"].models?.indexOf(form.watch("configuration.tts.model"))] || []
+                        ).map((voice: string) => (
+                          <SelectItem key={voice} value={voice}>
+                            <span className="capitalize">{voice}</span>
+                          </SelectItem>
+                      ))
+                      }
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -707,8 +718,8 @@ export const TTS_PROVIDERS: { [key: string]: any } = {
   "edge-tts": {
     name: "edge-tts",
     description: t("youNeedToSetupApiKeyBeforeUsingOpenAI"),
-    models: ["tts"],
-    voices: ["en-US-BrianNeural"],
+    models: ["en-US","ja-JP"],
+    voices: [["Brian","Andrew","Emma","Ava"],["Keita","Nanami"]],
   }
 };
 
@@ -734,8 +745,8 @@ const conversationDefaultConfiguration = {
     tts: {
       baseUrl: "",
       engine: "edge-tts",
-      model: "tts",
-      voice: "alloy",
+      model: "en-US",
+      voice: "Brian",
     },
   },
 };
