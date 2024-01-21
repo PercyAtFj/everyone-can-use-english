@@ -719,7 +719,7 @@ export const TTS_PROVIDERS: { [key: string]: any } = {
     name: "edge-tts",
     description: t("youNeedToSetupApiKeyBeforeUsingOpenAI"),
     models: ["en-US","ja-JP"],
-    voices: [["Brian","Andrew","Emma","Ava"],["Keita","Nanami"]],
+    voices: [["Brian","Andrew","Steffan","Emma","Ava"],["Keita","Nanami"]],
   }
 };
 
