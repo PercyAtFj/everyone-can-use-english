@@ -30,6 +30,8 @@ import path from "path";
 import Ffmpeg from "@main/ffmpeg";
 import whisper from "@main/whisper";
 import { hashFile } from "@/utils";
+import { HttpsProxyAgent } from 'https-proxy-agent';
+import * as nf from 'node-fetch';
 
 const logger = log.scope("db/models/conversation");
 @Table({
@@ -145,7 +147,9 @@ export class Conversation extends Model<Conversation> {
         openAIApiKey: key,
         modelName: this.model,
         configuration: {
+          httpAgent: new HttpsProxyAgent("http://127.0.0.1:7892"),
           baseURL: this.configuration.baseUrl,
+          fetch:nf.default,
         },
         temperature: this.configuration.temperature,
         n: this.configuration.numberOfChoices,
