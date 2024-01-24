@@ -1,11 +1,13 @@
 import { t } from "i18next";
-import { MicIcon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { MicIcon, LockIcon } from "lucide-react";
+import { useState, useEffect, useRef, useContext } from "react";
+import { AppSettingsProviderContext } from "@renderer/context";
 import RecordPlugin from "wavesurfer.js/dist/plugins/record";
 import WaveSurfer from "wavesurfer.js";
 import { cn } from "@renderer/lib/utils";
 import { RadialProgress, toast } from "@renderer/components/ui";
 import { useHotkeys } from "react-hotkeys-hook";
+import { fetchFile } from "@ffmpeg/util";
 
 export const RecordButton = (props: {
   className?: string;
@@ -16,6 +18,19 @@ export const RecordButton = (props: {
   const { className, disabled, onRecordBegin, onRecordEnd } = props;
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>(0);
+  const { EnjoyApp } = useContext(AppSettingsProviderContext);
+  const [access, setAccess] = useState<boolean>(false);
+
+  const askForMediaAccess = () => {
+    EnjoyApp.system.preferences.mediaAccess("microphone").then((access) => {
+      if (access) {
+        setAccess(true);
+      } else {
+        setAccess(false);
+        toast.warning(t("noMicrophoneAccess"));
+      }
+    });
+  };
 
   useHotkeys(["command+alt+r", "control+alt+r"], () => {
     if (disabled) return;
@@ -41,6 +56,10 @@ export const RecordButton = (props: {
     };
   }, [isRecording]);
 
+  useEffect(() => {
+    askForMediaAccess();
+  }, []);
+
   return (
     <div
       className={cn(
@@ -55,7 +74,11 @@ export const RecordButton = (props: {
       )}
       onClick={() => {
         if (disabled) return;
-        setIsRecording((isRecording) => !isRecording);
+        if (access) {
+          setIsRecording((isRecording) => !isRecording);
+        } else {
+          askForMediaAccess();
+        }
       }}
     >
       {isRecording ? (
@@ -82,6 +105,9 @@ export const RecordButton = (props: {
       ) : (
         <div className="flex items-center  justify-center space-x-4 h-10">
           <MicIcon className="w-10 h-10" />
+          {!access && (
+            <LockIcon className="w-4 h-4 absolute right-3 bottom-4" />
+          )}
         </div>
       )}
     </div>
@@ -92,6 +118,26 @@ const RecordButtonPopover = (props: {
   onRecordEnd: (blob: Blob, duration: number) => void;
 }) => {
   const containerRef = useRef<HTMLDivElement>();
+  const { ffmpeg } = useContext(AppSettingsProviderContext);
+
+  const transcode = async (blob: Blob) => {
+    const input = `input.${blob.type.split("/")[1]}`;
+    const output = input.replace(/\.[^/.]+$/, ".wav");
+    await ffmpeg.writeFile(input, await fetchFile(blob));
+    await ffmpeg.exec([
+      "-i",
+      input,
+      "-ar",
+      "16000",
+      "-ac",
+      "1",
+      "-c:a",
+      "pcm_s16le",
+      output,
+    ]);
+    const data = await ffmpeg.readFile(output);
+    return new Blob([data], { type: "audio/wav" });
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -111,9 +157,10 @@ const RecordButtonPopover = (props: {
       startAt = Date.now();
     });
 
-    record.on("record-end", (blob: Blob) => {
+    record.on("record-end", async (blob: Blob) => {
       const duration = Date.now() - startAt;
-      props.onRecordEnd(blob, duration);
+      const output = await transcode(blob);
+      props.onRecordEnd(output, duration);
     });
 
     RecordPlugin.getAvailableAudioDevices()

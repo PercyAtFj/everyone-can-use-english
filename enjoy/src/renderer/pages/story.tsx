@@ -79,21 +79,14 @@ export default () => {
             return;
           }
 
-          try {
-            const res = await extractStoryCommand(story.content, {
-              key: openai.key,
-              modelName: openai.model,
-            });
+          const res = await extractStoryCommand(story.content, {
+            key: openai.key,
+            modelName: openai.model,
+            baseUrl: openai.baseUrl,
+          });
 
-            words = res.words || [];
-            idioms = res.idioms || [];
-          } catch (error) {
-            console.error(error);
-            toast.error(t("extractionFailed"), {
-              description: error.message,
-            });
-            return;
-          }
+          words = res.words || [];
+          idioms = res.idioms || [];
         }
 
         webApi
@@ -219,6 +212,8 @@ export default () => {
         },
         {
           key: openai.key,
+          modelName: openai.model,
+          baseUrl: openai.baseUrl,
         }
       )
         .then((res) => {

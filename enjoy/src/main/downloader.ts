@@ -2,7 +2,9 @@ import { ipcMain, app } from "electron";
 import path from "path";
 import fs from "fs";
 import mainWin from "@main/window";
+import log from "electron-log/main";
 
+const logger = log.scope("downloader");
 class Downloader {
   public tasks: Electron.DownloadItem[];
 
@@ -22,7 +24,11 @@ class Downloader {
       webContents.downloadURL(url);
       webContents.session.on("will-download", (_event, item, _webContents) => {
         if (savePath) {
-          item.setSavePath(savePath);
+          if (fs.statSync(savePath).isDirectory()) {
+            item.setSavePath(path.join(savePath, item.getFilename()));
+          } else {
+            item.setSavePath(savePath);
+          }
         } else {
           item.setSavePath(
             path.join(app.getPath("downloads"), item.getFilename())
@@ -55,9 +61,11 @@ class Downloader {
           if (state === "completed") {
             resolve(item.getSavePath());
           } else {
-            fs.rmSync(item.getSavePath(), {
-              force: true,
-            });
+            if (fs.lstatSync(item.getSavePath()).isFile()) {
+              fs.rmSync(item.getSavePath(), {
+                force: true,
+              });
+            }
             resolve(undefined);
           }
         });
@@ -66,10 +74,14 @@ class Downloader {
   }
 
   cancel(filename: string) {
-    const task = this.tasks.find((t) => t.getFilename() === filename);
-    if (task && task.getState() === "progressing") {
-      task.cancel();
-    }
+    logger.debug("dashboard", this.dashboard());
+    this.tasks
+      .filter(
+        (t) => t.getFilename() === filename && t.getState() === "progressing"
+      )
+      .forEach((t) => {
+        t.cancel();
+      });
   }
 
   cancelAll() {
@@ -93,7 +105,14 @@ class Downloader {
   }
 
   registerIpcHandlers() {
+    ipcMain.handle("download-start", (event, url, savePath) => {
+      this.download(url, {
+        webContents: event.sender,
+        savePath,
+      });
+    });
     ipcMain.handle("download-cancel", (_event, filename) => {
+      logger.debug("download-cancel", filename);
       this.cancel(filename);
     });
     ipcMain.handle("download-cancel-all", () => {
